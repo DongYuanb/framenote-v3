@@ -1,0 +1,57 @@
+核心定位
+
+产品角色：FrameNote 是面向视频内容的 AI 助手，集成“上传/解析 → 转录 → 摘要/图文笔记 → AI 问答 → 多格式导出 → 售后服务”全流程。
+部署方式：后端 FastAPI 提供统一 API，前端（zed-landing-vibe）通过 SPA 承载体验；若存在编译产物，服务端会将其挂载到根路径。
+用户流程
+
+视频导入：
+POST /api/upload：支持多种本地视频格式。
+POST /api/download-url：输入 Bilibili/YouTube 等平台链接直接解析，自动判别平台并落地到任务。
+POST /api/preview-video：在下载前预览时长、缩略图和作者信息。
+任务编排：
+POST /api/process/{task_id}：开启转录与多模态处理，可选择是否生成图文笔记及保留临时文件。
+GET /api/status/{task_id}：实时查询状态、进度百分比、当前步骤。
+后台工作流包括音频抽取、ASR 转写、文本聚合、摘要生成、多模态笔记构建。
+结果获取：
+GET /api/results/{task_id}：统一返回 ASR、摘要、多模态 JSON。
+GET /api/export/{task_id}/markdown & /json：导出 Markdown 或原始 JSON；若用户在线编辑过笔记，则优先返回编辑稿。
+PUT /api/notes/{task_id}：保存用户自定义的 Markdown 版本。
+GET /api/export/{task_id}/pdf：基于 Markdown/PDF 引擎转为含图 PDF。
+/api/storage 静态挂载：所有生成文件可通过固定目录访问。
+AI 助手：
+POST /api/chat/send：基于任务生成的知识库回答问题，同时给出引用来源与建议追问。
+POST /api/chat/quick-question：内置摘要、要点、时间轴等快捷提问模板。
+POST /api/chat/stream 与 /api/agent/stream：提供事件流式响应体验。
+DELETE /api/chat/history/{task_id} 与 /api/agent/sessions/{task_id}：重置会话状态。
+POST /api/agent/knowledge/reload/{task_id}：用户更新笔记后可热加载新知识。
+运维辅助：
+全局 CORS / GZip / 静态缓存头优化。
+/api/config、/api/health、/sitemap.xml 提供运行配置、健康检查与 SEO 支撑。
+统一日志系统记录任务生命周期、下载与处理状态。
+售后社群：
+所有付费用户共用一个企业售后微信群；调用 /api/community/join-group 生成邀请。
+升级会员后自动保持在同一群内，无需重复加入。
+/api/community/groups、/stats、/broadcast 支持管理员查看群信息与记录群发需求。
+Webhook 接口预留企业微信事件接入，占位返回说明。
+支付体系：
+全新会员档位：基础/标准/高级均提供月卡、季卡、年卡和连续包月；每档对应权益、限额与自动续费标记。
+POST /api/payment/create（对应 PaymentService.create_payment）根据用户选择生成支付宝/微信订单。
+支付回调逻辑拒绝退款事件，成功时更新内存订单，待后续接入真实数据库或订阅体系。
+支付响应包含自动续费标记和不同支付方式所需的链接/二维码/APP 参数。
+国际化与 SEO：
+index.html 预设完整 Meta/OG/Twitter 标签、字体预加载、关键图像预取。
+robots.txt 和 <link rel="sitemap"> 协助搜索引擎索引。
+主题色、移动端图标、PWA 友好设置已配置。
+技术亮点
+
+多模态工作流：FFmpeg 音频抽取、ASR（集成腾讯语音识别示例）、Cohere 向量、OpenAI/LanceDB 检索增强。
+长缓存静态资源：自定义 CustomStaticFiles 对静态内容添加 Cache-Control.
+结构清晰的服务层：services/ 模块拆分下载、处理、摘要、笔记、支付、社群等逻辑，便于替换与扩展。
+计划中的扩展：支付 RSA/国密签名、企业微信回调、AI 建议问题强化等模块保留清晰 TODO。
+整体特点
+
+从素材抓取到知识产出的一站式自动化流程。
+支持本地文件与在线视频两种入口，兼容多种导出格式。
+内置 AI 问答与知识库更新机制，保证内容可交互、可迭代。
+提供售后微信群作为唯一服务窗口，并配套会员档位与续费模型。
+注重性能、SEO 与运维细节，为产品上线做好基础准备。

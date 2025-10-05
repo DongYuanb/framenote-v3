@@ -1,0 +1,69 @@
+# FrameNote 环境变量配置示例
+# 复制此文件为 .env 并填入您的实际配置
+
+# ==================== 基础配置 ====================
+DEPLOYMENT_MODE=local
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8001
+DATABASE_URL=sqlite:///./storage/app.db
+
+# ==================== AI模型配置 ====================
+# OpenAI API配置（标准配置）
+OPENAI_API_KEY=sk-your-openai-api-key-here
+MODEL_ID=gpt-4o-mini
+
+# 或者使用OpenAI官方API
+# OPENAI_API_KEY=sk-your-openai-api-key-here
+# OPENAI_BASE_URL=https://api.openai.com/v1
+# MODEL_ID=gpt-3.5-turbo
+
+# ==================== 语音识别配置 ====================
+# 腾讯云语音识别（必需，用于视频转文字）
+TENCENT_APPID=your-tencent-appid
+TENCENT_SECRET_ID=your-tencent-secret-id
+TENCENT_SECRET_KEY=your-tencent-secret-key
+
+# ==================== 多模态功能配置 ====================
+# Cohere API（可选，用于图片理解）
+COHERE_API_KEY=your-cohere-api-key
+
+# ==================== 支付配置 ====================
+# 支付宝配置（可选）
+ALIPAY_APP_ID=your-alipay-app-id
+ALIPAY_PRIVATE_KEY=your-alipay-private-key
+ALIPAY_PUBLIC_KEY=your-alipay-public-key
+ALIPAY_GATEWAY_URL=https://openapi.alipay.com/gateway.do
+
+# 微信支付配置（可选）
+WECHAT_PAY_MCH_ID=your-merchant-id
+WECHAT_PAY_API_KEY=your-api-key
+WECHAT_PAY_CERT_PATH=path/to/cert.pem
+WECHAT_PAY_NOTIFY_URL=https://yourdomain.com/api/payment/wechat/notify
+
+# ==================== 短信服务配置 ====================
+# 阿里云短信服务（可选）
+ALIYUN_ACCESS_KEY_ID=your-access-key-id
+ALIYUN_ACCESS_KEY_SECRET=your-access-key-secret
+SMS_TEMPLATE_CODE=your-template-code
+SMS_SIGN_NAME=your-sign-name
+
+# ==================== 企业微信配置 ====================
+# 企业微信（可选，用于社群管理）
+WECHAT_CORP_ID=your-corp-id
+WECHAT_CORP_SECRET=your-corp-secret
+WECHAT_AGENT_ID=your-agent-id
+WECHAT_ENCODING_AES_KEY=your-encoding-aes-key
+
+# ==================== 文件上传配置 ====================
+MAX_UPLOAD_SIZE_MB=500
+ALLOWED_EXTS=mp4,avi,mov,mkv,webm
+
+# ==================== 多模态处理配置 ====================
+MULTIMODAL_FRAME_FPS=0.2
+MULTIMODAL_SIMILARITY_THRESHOLD=0.9
+MULTIMODAL_MAX_CONCURRENT_SEGMENTS=5
+MULTIMODAL_ENABLE_TEXT_ALIGNMENT=true
+MULTIMODAL_MAX_ALIGNED_FRAMES=3
+MULTIMODAL_EMBED_MODEL=embed-v4.0
+MULTIMODAL_BATCH_SIZE=24
+MULTIMODAL_API_DELAY=0.1
