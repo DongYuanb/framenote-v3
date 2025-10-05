@@ -60,7 +60,7 @@ def test_settings():
         print(f"✓ 服务器地址: {settings.SERVER_HOST}:{settings.SERVER_PORT}")
         print(f"✓ API基础URL: {settings.public_api_base_url}")
         print(f"✓ 最大上传大小: {settings.MAX_UPLOAD_SIZE_MB}MB")
-        print(f"✓ 允许的文件扩展名: {settings.ALLOWED_EXTS}")
+        print(f"✓ 允许的文件扩展名: {settings.allowed_extensions}")
         
         return True
         

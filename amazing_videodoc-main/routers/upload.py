@@ -17,7 +17,7 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
     """上传视频文件"""
     user = auth_service.get_current_user(request.headers.get("Authorization"))
     settings = get_settings()
-    allowed_exts = tuple(f".{ext.lower()}" for ext in settings.ALLOWED_EXTS)
+    allowed_exts = tuple(f".{ext.lower()}" for ext in settings.allowed_extensions)
     if not file.filename.lower().endswith(allowed_exts):
         raise HTTPException(status_code=400, detail="不支持的视频格式")
 

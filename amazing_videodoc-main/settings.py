@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     FFMPEG_PATH: str = Field(default="ffmpeg")
     # Upload policy
     MAX_UPLOAD_SIZE_MB: int = 500
-    ALLOWED_EXTS: List[str] = Field(default_factory=lambda: ["mp4","avi","mov","mkv","webm"])
+    ALLOWED_EXTS: str = Field(default="mp4,avi,mov,mkv,webm")
     # Progress weights
     PROGRESS_WEIGHTS: Dict[str, float] = Field(default_factory=lambda: {
         "extract_audio":0.10,
@@ -93,6 +93,11 @@ class Settings(BaseSettings):
         if self.DEPLOYMENT_MODE == "local":
             return f"http://localhost:{self.SERVER_PORT}"
         return "/"  # same-origin by default when served behind reverse proxy
+
+    @property
+    def allowed_extensions(self) -> List[str]:
+        """Get allowed file extensions as a list."""
+        return [ext.strip() for ext in self.ALLOWED_EXTS.split(",") if ext.strip()]
 
     def validate_required_for_production(self) -> None:
         if self.DEPLOYMENT_MODE != "production":
