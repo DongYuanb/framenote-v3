@@ -1,0 +1,47 @@
+# Node / frontend
+node_modules/
+dist/
+.next/
+.nuxt/
+.cache/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Env & secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.crt
+*.pfx
+*.keystore
+**/config_local.*
+
+# App storage & logs
+storage/
+**/storage/
+*.log
+logs/
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.vscode/
+*.code-workspace
+
+# Build artifacts
+build/
+coverage/
+*.coverage
+*.sqlite3
+*.db
+
+# Generated static
+amazing_videodoc-main/zed-landing-vibe/
+zed-landing-vibe-main/dist/
+
