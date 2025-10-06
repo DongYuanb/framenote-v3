@@ -1,6 +1,6 @@
 """处理相关路由"""
 import json
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
 from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -18,7 +18,7 @@ task_manager = TaskManager()
 
 
 @router.post("/process/{task_id}")
-async def start_processing(task_id: str, request: ProcessRequest, background_tasks: BackgroundTasks):
+async def start_processing(task_id: str, request: ProcessRequest, background_tasks: BackgroundTasks, token: str | None = Header(default=None)):
     """开始处理视频"""
     try:
         metadata = task_manager.load_metadata(task_id)
@@ -27,6 +27,31 @@ async def start_processing(task_id: str, request: ProcessRequest, background_tas
 
     if metadata["status"] != "pending":
         raise HTTPException(status_code=400, detail=f"任务状态错误: {metadata['status']}")
+
+    # 简易用量与权限控制：免费用户每日 10 分钟
+    try:
+      from .auth import USERS, SESSIONS, USAGE  # type: ignore
+    except Exception:
+      USERS, SESSIONS, USAGE = {}, {}, {}
+
+    if token and token in SESSIONS:
+        phone = SESSIONS[token]["phone"]
+        user = USERS.get(phone) or {}
+        # 判断是否VIP：有未过期的 vip_expire_at 即视为 VIP
+        is_vip = bool(user.get("vip_expire_at") and user["vip_expire_at"] > __import__('time').time())
+        if not is_vip:
+            # 免费用户每日 10 分钟
+            import datetime, time as _t
+            today = datetime.date.today().isoformat()
+            rec = USAGE.setdefault(phone, {"date": today, "used_seconds": 0})
+            if rec.get("date") != today:
+                rec["date"] = today
+                rec["used_seconds"] = 0
+            DAILY_SEC = 10 * 60
+            if rec["used_seconds"] >= DAILY_SEC:
+                raise HTTPException(status_code=402, detail="今日免费额度已用尽（10分钟）。请明日再试或开通会员提升额度")
+            # 预占：按一次处理估计 5 分钟，避免并发滥用（实际可用真实时长回填）
+            rec["used_seconds"] += 5 * 60
 
     # 启动后台处理
     background_tasks.add_task(

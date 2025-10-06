@@ -217,3 +217,14 @@ export async function getCurrentUser(token: string) {
 export async function getMembershipInfo(token: string) {
   return apiFetch<Membership>(`/api/membership/me?token=${encodeURIComponent(token)}`);
 }
+
+// 会员：计划与升级
+export async function getMembershipPlans(){
+  return apiFetch<{plans: {id:string;name:string;price:number;currency:string;duration_days:number;benefits:string[]}[]}>(`/api/membership/plans`);
+}
+export async function upgradeMembership(token:string, planId:string){
+  return apiFetch<{ok:boolean; message?:string; expire_at?:number}>(`/api/membership/upgrade`,{
+    method:'POST',
+    body: JSON.stringify({ token, plan_id: planId })
+  });
+}

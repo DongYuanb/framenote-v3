@@ -1,18 +1,21 @@
 import { useI18n } from "@/lib/i18n";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sun, Moon, Languages, ChevronDown, User2, Crown, LogIn, LogOut } from "lucide-react";
+import { Sun, Moon, Languages, ChevronDown, User2, Crown, LogIn, LogOut, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const logo = "/lovable-uploads/1a269a26-9009-4b73-80c2-654445d2810b.png";
 
+import SupportGroupDialog from "@/components/SupportGroupDialog";
+
 export default function AppHeader() {
   const { lang, setLang, t } = useI18n();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { user, membership, logout } = useAuth();
+  const [openSupport, setOpenSupport] = useState(false);
 
   useEffect(() => {
     // noop: could persist theme if needed (next-themes already does)
@@ -41,6 +44,12 @@ export default function AppHeader() {
 
           <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={toggleTheme}>
             {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          {/* 售后群入口 */}
+          <SupportGroupDialog open={openSupport} onOpenChange={setOpenSupport} />
+          <Button variant="outline" size="sm" onClick={()=>setOpenSupport(true)} className="hidden md:flex items-center gap-1">
+            <Users className="h-4 w-4" /> <span className="text-xs">售后群</span>
           </Button>
 
           <DropdownMenu>

@@ -3,6 +3,8 @@ from fastapi import APIRouter, HTTPException
 import random
 import time
 from typing import Dict, Optional
+from pathlib import Path
+import json
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -10,6 +12,7 @@ router = APIRouter(prefix="/api", tags=["auth"])
 USERS: Dict[str, dict] = {}  # 用户数据 {phone: {id, phone, nickname, password, created_at}}
 VERIFICATION_CODES: Dict[str, dict] = {}  # 验证码 {phone: {code, expire_time}}
 SESSIONS: Dict[str, dict] = {}  # 会话 {token: {user_id, phone, login_time}}
+USAGE: Dict[str, dict] = {}  # 用量 {phone: {date: 'YYYY-MM-DD', used_seconds: int}}
 
 # 阿里云短信配置（需要配置真实参数）
 ALIYUN_SMS_CONFIG = {
@@ -181,17 +184,92 @@ async def membership_me(token: str = None):
     if not token or token not in SESSIONS:
         return {"vip": False}
     
-    # 简单的会员逻辑：注册时间超过7天的用户为VIP
     phone = SESSIONS[token]["phone"]
     if phone in USERS:
         user = USERS[phone]
-        is_vip = time.time() - user["created_at"] > 7 * 24 * 3600
+        is_vip = bool(user.get("vip_expire_at") and user["vip_expire_at"] > time.time())
+        level = user.get("vip_level", "普通用户") if is_vip else "普通用户"
         return {
             "vip": is_vip,
-            "level": "VIP" if is_vip else "普通用户",
-            "expireAt": None
+            "level": level,
+            "expireAt": user.get("vip_expire_at")
         }
     
     return {"vip": False}
+
+# ------------------ 会员计划与下单（占位实现） ------------------
+
+MEMBERSHIP_PLANS = [
+    {"id": "basic_month", "tier": "基础版", "name": "基础月卡", "price": 9.9, "currency": "CNY", "duration_days": 30, "benefits": [
+        "每日提取上限提升至 60 分钟", "标准处理队列", "基础摘要质量"
+    ]},
+    {"id": "basic_quarter", "tier": "基础版", "name": "基础季卡", "price": 28.8, "currency": "CNY", "duration_days": 90, "benefits": [
+        "每日提取上限提升至 60 分钟", "标准处理队列", "基础摘要质量", "季卡9折" 
+    ]},
+    {"id": "basic_year", "tier": "基础版", "name": "基础年卡", "price": 98.8, "currency": "CNY", "duration_days": 365, "benefits": [
+        "每日提取上限提升至 60 分钟", "标准处理队列", "基础摘要质量", "年卡8折"
+    ]},
+
+    {"id": "pro_month", "tier": "专业版", "name": "专业月卡", "price": 19.9, "currency": "CNY", "duration_days": 30, "benefits": [
+        "每日提取上限提升至 180 分钟", "优先处理队列", "高级摘要与知识图片", "多语言字幕"
+    ]},
+    {"id": "pro_quarter", "tier": "专业版", "name": "专业季卡", "price": 52.0, "currency": "CNY", "duration_days": 90, "benefits": [
+        "每日提取上限提升至 180 分钟", "优先处理队列", "高级摘要与知识图片", "多语言字幕", "季卡9折"
+    ]},
+    {"id": "pro_year", "tier": "专业版", "name": "专业年卡", "price": 188.8, "currency": "CNY", "duration_days": 365, "benefits": [
+        "每日提取上限提升至 180 分钟", "优先处理队列", "高级摘要与知识图片", "多语言字幕", "年卡8折"
+    ]},
+
+    {"id": "ultimate_month", "tier": "旗舰版", "name": "旗舰月卡", "price": 29.9, "currency": "CNY", "duration_days": 30, "benefits": [
+        "每日提取上限提升至 480 分钟", "极速处理队列", "专家级摘要与图文讲义", "PDF/Markdown一键导出", "在线链接极速下载"
+    ]},
+    {"id": "ultimate_quarter", "tier": "旗舰版", "name": "旗舰季卡", "price": 79.9, "currency": "CNY", "duration_days": 90, "benefits": [
+        "每日提取上限提升至 480 分钟", "极速处理队列", "专家级摘要与图文讲义", "PDF/Markdown一键导出", "在线链接极速下载", "季卡9折"
+    ]},
+    {"id": "ultimate_year", "tier": "旗舰版", "name": "旗舰年卡", "price": 288.8, "currency": "CNY", "duration_days": 365, "benefits": [
+        "每日提取上限提升至 480 分钟", "极速处理队列", "专家级摘要与图文讲义", "PDF/Markdown一键导出", "在线链接极速下载", "年卡8折"
+    ]}
+]
+
+ORDERS: Dict[str, dict] = {}
+
+@router.get("/membership/plans")
+async def membership_plans():
+    # 若存在外部配置文件，则覆盖默认方案
+    cfg_paths = [
+        Path("membership_plans.json"),
+        Path("amazing_videodoc-main/membership_plans.json"),
+        Path("config/membership_plans.json"),
+    ]
+    for p in cfg_paths:
+        if p.exists():
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+                plans = data.get("plans") if isinstance(data, dict) else data
+                if isinstance(plans, list) and plans:
+                    return {"plans": plans}
+            except Exception:
+                pass
+    return {"plans": MEMBERSHIP_PLANS}
+
+@router.post("/membership/upgrade")
+async def membership_upgrade(payload: dict):
+    token = payload.get("token")
+    plan_id = payload.get("plan_id")
+    if not token or token not in SESSIONS:
+        raise HTTPException(status_code=401, detail="请先登录")
+    plan = next((p for p in MEMBERSHIP_PLANS if p["id"] == plan_id), None)
+    if not plan:
+        raise HTTPException(status_code=404, detail="会员计划不存在")
+
+    phone = SESSIONS[token]["phone"]
+    if phone not in USERS:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    # 占位：直接开通（真实场景应创建订单并支付成功后再开通）
+    USERS[phone]["vip_expire_at"] = int(time.time()) + plan["duration_days"] * 86400
+    USERS[phone]["vip_level"] = plan.get("tier") or plan.get("name")
+    ORDERS[str(int(time.time()))] = {"user": phone, "plan_id": plan_id, "created_at": int(time.time())}
+    return {"ok": True, "message": f"已开通：{plan['name']}", "expire_at": USERS[phone]["vip_expire_at"]}
 
 

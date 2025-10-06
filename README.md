@@ -114,6 +114,34 @@ OPENAI_API_KEY=your_openai_api_key
 COHERE_API_KEY=your_cohere_api_key
 ```
 
+### 会员计划配置（可选）
+支持通过 JSON 覆盖默认套餐，放置在以下任一位置均可：
+- `membership_plans.json`
+- `amazing_videodoc-main/membership_plans.json`
+- `config/membership_plans.json`
+
+文件格式：
+```json
+{
+  "plans": [
+    { "id": "basic_month", "tier": "基础版", "name": "基础月卡", "price": 9.9,  "currency": "CNY", "duration_days": 30,  "benefits": ["每日上限 60 分钟", "标准队列", "基础摘要"] },
+    { "id": "basic_quarter", "tier": "基础版", "name": "基础季卡", "price": 28.8, "currency": "CNY", "duration_days": 90,  "benefits": ["每日上限 60 分钟", "标准队列", "基础摘要"] },
+    { "id": "basic_year", "tier": "基础版", "name": "基础年卡", "price": 98.8, "currency": "CNY", "duration_days": 365, "benefits": ["每日上限 60 分钟", "标准队列", "基础摘要"] },
+    { "id": "pro_month", "tier": "专业版", "name": "专业月卡", "price": 19.9,  "currency": "CNY", "duration_days": 30,  "benefits": ["每日上限 180 分钟", "优先队列", "高级摘要", "多语言字幕"] },
+    { "id": "pro_quarter", "tier": "专业版", "name": "专业季卡", "price": 52.0, "currency": "CNY", "duration_days": 90,  "benefits": ["每日上限 180 分钟", "优先队列", "高级摘要", "多语言字幕"] },
+    { "id": "pro_year", "tier": "专业版", "name": "专业年卡", "price": 188.8, "currency": "CNY", "duration_days": 365, "benefits": ["每日上限 180 分钟", "优先队列", "高级摘要", "多语言字幕"] },
+    { "id": "ultimate_month", "tier": "旗舰版", "name": "旗舰月卡", "price": 29.9,  "currency": "CNY", "duration_days": 30,  "benefits": ["每日上限 480 分钟", "极速队列", "专家级摘要", "PDF/Markdown 导出", "在线链接极速下载"] },
+    { "id": "ultimate_quarter", "tier": "旗舰版", "name": "旗舰季卡", "price": 79.9, "currency": "CNY", "duration_days": 90,  "benefits": ["每日上限 480 分钟", "极速队列", "专家级摘要", "PDF/Markdown 导出", "在线链接极速下载"] },
+    { "id": "ultimate_year", "tier": "旗舰版", "name": "旗舰年卡", "price": 288.8, "currency": "CNY", "duration_days": 365, "benefits": ["每日上限 480 分钟", "极速队列", "专家级摘要", "PDF/Markdown 导出", "在线链接极速下载"] }
+  ]
+}
+```
+
+### 售后服务群二维码（预留）
+- 将二维码命名为 `support-group-qr.png` 放到前端 `zed-landing-vibe-main/public/` 目录
+- 导航栏右侧“售后群”按钮会自动弹出展示
+- 若不放图片，按钮仍存在但会显示默认占位提示
+
 ## 📋 更新记录
 
 ### v3.0.0 (2025-01-06)

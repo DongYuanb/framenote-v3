@@ -13,8 +13,8 @@ export default defineConfig(({ mode }) => ({
       "ab-olympic-sponsored-proudly.trycloudflare.com"
     ],
     proxy: {
-      "/api": { target: "http://localhost:8000", changeOrigin: true },
-      "/storage": { target: "http://localhost:8000", changeOrigin: true }
+      "/api": { target: "http://localhost:8001", changeOrigin: true },
+      "/storage": { target: "http://localhost:8001", changeOrigin: true }
     }
   },
   plugins: [
