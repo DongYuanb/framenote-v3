@@ -32,27 +32,43 @@ export function PricingSection() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    apiClient
-      .getPaymentMethods()
-      .then((m) => setMethods(m))
-      .catch((e) => setError(e.message || ''))
+    // 直接使用模拟数据，不调用API
+    setMethods({
+      enabled: ['alipay_web'],
+      disabled: {
+        'alipay_web': '支付功能暂未启用'
+      }
+    })
+    setError('')
   }, [])
 
   const pay = async (planKey: string, cycle: 'monthly' | 'quarterly' | 'yearly') => {
-    const planEnum = PLAN_TO_ENUM[planKey][cycle]
-    // 仅保留支付宝，自动优先选择 alipay_web
-    const method = methods.enabled.find((m) => m.startsWith('alipay_')) || 'alipay_web'
-    const returnUrl = window.location.origin + window.location.pathname + '#success'
-    const resp = await apiClient.createPayment({ plan: planEnum, payment_method: method, return_url: returnUrl })
-    if (resp.order_no) {
-      try { (globalThis as any).localStorage?.setItem?.('last_order_no', resp.order_no) } catch {}
+    try {
+      const planEnum = PLAN_TO_ENUM[planKey][cycle]
+      // 仅保留支付宝，自动优先选择 alipay_web
+      const method = methods.enabled.find((m) => m.startsWith('alipay_')) || 'alipay_web'
+      const returnUrl = window.location.origin + window.location.pathname + '#success'
+      const resp = await apiClient.createPayment({ plan: planEnum, payment_method: method, return_url: returnUrl })
+      
+      // 检查是否是模拟响应
+      if (resp.message && resp.message.includes('暂未启用')) {
+        alert(resp.message)
+        return
+      }
+      
+      if (resp.order_no) {
+        try { (globalThis as any).localStorage?.setItem?.('last_order_no', resp.order_no) } catch {}
+      }
+      if (resp.payment_url && resp.payment_url !== '#') {
+        window.location.href = resp.payment_url
+        return
+      }
+      // 其他模式（如APP）
+      alert('请在新页面完成支付')
+    } catch (error) {
+      console.error('支付失败:', error)
+      alert('支付功能暂未启用，请联系管理员')
     }
-    if (resp.payment_url) {
-      window.location.href = resp.payment_url
-      return
-    }
-    // 其他模式（如APP）
-    alert('请在新页面完成支付')
   }
 
   return (

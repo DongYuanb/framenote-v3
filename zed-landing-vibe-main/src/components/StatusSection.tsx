@@ -34,12 +34,17 @@ export function StatusSection({ taskId }: StatusSectionProps) {
 
   useEffect(() => {
     let mounted = true
-    apiClient
-      .request<any>('/api/payment/usage/today')
-      .then((data) => {
-        if (mounted) setUsage(data as any)
+    
+    // 直接使用模拟数据，不调用API
+    if (mounted) {
+      setUsage({
+        daily_usage: 0,
+        daily_limit: 10,
+        remaining: 10
       })
-      .catch((e) => setUsageError(e.message || ''))
+      setUsageError('')
+    }
+    
     return () => {
       mounted = false
     }

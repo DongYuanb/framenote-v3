@@ -55,9 +55,14 @@ class PaymentService:
         self.wechat_api_cert = os.getenv("WECHAT_PAY_CERT_PATH")
         self.wechat_api_key_path = os.getenv("WECHAT_PAY_KEY_PATH")
 
-        # 解析密钥
-        self._alipay_private_key_obj = self._load_private_key(self.alipay_private_key)
-        self._alipay_public_key_obj = self._load_public_key(self.alipay_public_key)
+        # 解析密钥（如果私钥无效则跳过）
+        try:
+            self._alipay_private_key_obj = self._load_private_key(self.alipay_private_key)
+            self._alipay_public_key_obj = self._load_public_key(self.alipay_public_key)
+        except Exception as e:
+            self.logger.warning(f"支付密钥初始化失败，将禁用支付功能: {e}")
+            self._alipay_private_key_obj = None
+            self._alipay_public_key_obj = None
 
         # 能力开关
         self._alipay_enabled = bool(self.alipay_app_id and self._alipay_private_key_obj)
@@ -462,11 +467,8 @@ class PaymentService:
         try:
             return serialization.load_pem_private_key(pem.encode("utf-8"), password=None)
         except ValueError as exc:
-            self.logger.error("加载支付宝私钥失败: %s", exc)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="支付宝私钥格式错误",
-            ) from exc
+            self.logger.warning("加载支付宝私钥失败，将禁用支付宝功能: %s", exc)
+            return None
 
     def _load_public_key(self, key: Optional[str]):
         if not key:
@@ -475,11 +477,8 @@ class PaymentService:
         try:
             return serialization.load_pem_public_key(pem.encode("utf-8"))
         except ValueError as exc:
-            self.logger.error("加载支付宝公钥失败: %s", exc)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="支付宝公钥格式错误",
-            ) from exc
+            self.logger.warning("加载支付宝公钥失败，将禁用支付宝功能: %s", exc)
+            return None
 
     def _verify_alipay_signature(self, payload: Dict[str, Any]) -> None:
         if not self._alipay_public_key_obj:
