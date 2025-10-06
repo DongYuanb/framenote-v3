@@ -228,3 +228,9 @@ export async function upgradeMembership(token:string, planId:string){
     body: JSON.stringify({ token, plan_id: planId })
   });
 }
+
+// 用量查询
+export type Usage = { tier?: string; used_seconds: number; limit_seconds: number; remain_seconds: number };
+export async function getTodayUsage(token: string){
+  return apiFetch<Usage>(`/api/usage/me?token=${encodeURIComponent(token)}`);
+}

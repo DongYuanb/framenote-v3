@@ -37,21 +37,27 @@ async def start_processing(task_id: str, request: ProcessRequest, background_tas
     if token and token in SESSIONS:
         phone = SESSIONS[token]["phone"]
         user = USERS.get(phone) or {}
-        # 判断是否VIP：有未过期的 vip_expire_at 即视为 VIP
-        is_vip = bool(user.get("vip_expire_at") and user["vip_expire_at"] > __import__('time').time())
-        if not is_vip:
-            # 免费用户每日 10 分钟
-            import datetime, time as _t
-            today = datetime.date.today().isoformat()
-            rec = USAGE.setdefault(phone, {"date": today, "used_seconds": 0})
-            if rec.get("date") != today:
-                rec["date"] = today
-                rec["used_seconds"] = 0
-            DAILY_SEC = 10 * 60
-            if rec["used_seconds"] >= DAILY_SEC:
-                raise HTTPException(status_code=402, detail="今日免费额度已用尽（10分钟）。请明日再试或开通会员提升额度")
-            # 预占：按一次处理估计 5 分钟，避免并发滥用（实际可用真实时长回填）
-            rec["used_seconds"] += 5 * 60
+        import datetime, time as _t
+        today = datetime.date.today().isoformat()
+        rec = USAGE.setdefault(phone, {"date": today, "used_seconds": 0})
+        if rec.get("date") != today:
+            rec["date"] = today
+            rec["used_seconds"] = 0
+        # 档位配额
+        now = _t.time()
+        is_vip = bool(user.get("vip_expire_at") and user["vip_expire_at"] > now)
+        tier = user.get("vip_level") if is_vip else "free"
+        quotas = {
+          "free": 10*60,
+          "基础版": 60*60,
+          "专业版": 180*60,
+          "旗舰版": 480*60,
+        }
+        limit = quotas.get(tier, 10*60)
+        if rec["used_seconds"] >= limit:
+            raise HTTPException(status_code=402, detail=f"今日额度已用尽（{int(limit/60)}分钟）。请明日再试或开通会员提升额度")
+        # 预占 5 分钟，处理完成后可改为真实消耗
+        rec["used_seconds"] += 5*60
 
     # 启动后台处理
     background_tasks.add_task(

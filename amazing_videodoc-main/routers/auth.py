@@ -197,6 +197,35 @@ async def membership_me(token: str = None):
     
     return {"vip": False}
 
+# 用量查询：返回今日已用与剩余（按会员档位）
+@router.get("/usage/me")
+async def usage_me(token: str | None = None):
+    import datetime, time as _t
+    if not token or token not in SESSIONS:
+        return {"used_seconds": 0, "limit_seconds": 10*60, "remain_seconds": 10*60}
+    phone = SESSIONS[token]["phone"]
+    today = datetime.date.today().isoformat()
+    rec = USAGE.setdefault(phone, {"date": today, "used_seconds": 0})
+    if rec.get("date") != today:
+        rec["date"] = today
+        rec["used_seconds"] = 0
+    # 决定配额
+    user = USERS.get(phone) or {}
+    now = _t.time()
+    is_vip = bool(user.get("vip_expire_at") and user["vip_expire_at"] > now)
+    tier = user.get("vip_level") if is_vip else "free"
+    # 不同档位每日配额（秒）
+    quotas = {
+        "free": 10*60,
+        "基础版": 60*60,
+        "专业版": 180*60,
+        "旗舰版": 480*60,
+    }
+    limit = quotas.get(tier, 10*60)
+    used = int(rec.get("used_seconds", 0))
+    remain = max(0, limit - used)
+    return {"tier": tier, "used_seconds": used, "limit_seconds": limit, "remain_seconds": remain}
+
 # ------------------ 会员计划与下单（占位实现） ------------------
 
 MEMBERSHIP_PLANS = [

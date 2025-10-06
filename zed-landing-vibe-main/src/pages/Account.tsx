@@ -2,10 +2,18 @@ import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, User, Phone, Calendar, Shield } from "lucide-react";
+import { Crown, User, Phone, Calendar, Shield, Timer } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getTodayUsage } from "@/lib/api";
 
 export default function AccountPage() {
-  const { user, membership, logout } = useAuth();
+  const { user, membership, logout, token } = useAuth();
+  const [usage, setUsage] = useState<{used_seconds:number; limit_seconds:number; remain_seconds:number; tier?:string}>();
+
+  useEffect(() => {
+    if(!token) return;
+    getTodayUsage(token).then(setUsage).catch(()=>{});
+  }, [token]);
 
   if (!user) {
     return (
@@ -77,6 +85,11 @@ export default function AccountPage() {
               <Badge variant={membership?.vip ? "default" : "secondary"}>
                 {membership?.level || "普通用户"}
               </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Timer className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">今日剩余解析时长：</span>
+              <span className="font-medium">{usage ? Math.floor((usage.remain_seconds||0)/60) : "-"} 分钟</span>
             </div>
             {membership?.vip && (
               <div className="text-sm text-muted-foreground">
