@@ -6,6 +6,7 @@ export default {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
+    './index.html',
   ],
   prefix: "",
   theme: {
@@ -120,5 +121,94 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function({ addUtilities }) {
+      addUtilities({
+        '.grid-pattern': {
+          'background-image': `
+            linear-gradient(to right, hsl(var(--grid-lines)) 1px, transparent 1px),
+            linear-gradient(to bottom, hsl(var(--grid-lines)) 1px, transparent 1px)
+          `,
+          'background-size': '32px 32px, 32px 32px',
+          'background-position': 'center',
+          'mask-image': 'radial-gradient(closest-side, #000, rgba(0,0,0,0.6))',
+        },
+        '.bg-spotlight': {
+          'background': 'radial-gradient(600px circle at var(--x, 50%) var(--y, 50%), hsl(var(--primary) / 0.12), transparent 60%)',
+          'transition': 'background 150ms ease-out',
+        },
+        '.edge-ornaments': {
+          'position': 'relative',
+        },
+        '.edge-ornaments::before': {
+          'content': '""',
+          'position': 'absolute',
+          'top': '48px',
+          'bottom': '48px',
+          'left': '16px',
+          'width': '1px',
+          'background': 'hsl(var(--grid-lines))',
+          'opacity': '0.6',
+          'pointer-events': 'none',
+        },
+        '.edge-ornaments::after': {
+          'content': '""',
+          'position': 'absolute',
+          'top': '48px',
+          'bottom': '48px',
+          'right': '16px',
+          'width': '1px',
+          'background': 'hsl(var(--grid-lines))',
+          'opacity': '0.6',
+          'pointer-events': 'none',
+        },
+        '.paper-noise': {
+          'background-color': 'hsl(var(--background))',
+          'background-image': `
+            radial-gradient(hsl(var(--grid-dots) / 0.35) 0.5px, transparent 0.6px),
+            radial-gradient(hsl(var(--grid-dots) / 0.25) 0.5px, transparent 0.6px)
+          `,
+          'background-size': '2px 2px, 3px 3px',
+          'background-position': '0 0, 1px 1px',
+        },
+        '.grid-stripes': {
+          'position': 'relative',
+        },
+        '.grid-stripes::before': {
+          'content': '""',
+          'position': 'absolute',
+          'left': '0',
+          'right': '0',
+          'top': '-1px',
+          'height': '56px',
+          'pointer-events': 'none',
+          'background-image': `
+            linear-gradient(to right, hsl(var(--grid-lines)) 1px, transparent 1px),
+            linear-gradient(to bottom, hsl(var(--grid-lines)) 1px, transparent 1px)
+          `,
+          'background-size': '32px 32px',
+          'opacity': '0.45',
+          'mask-image': 'linear-gradient(to bottom, black, transparent)',
+        },
+        '.grid-stripes::after': {
+          'content': '""',
+          'position': 'absolute',
+          'left': '0',
+          'right': '0',
+          'bottom': '-1px',
+          'height': '56px',
+          'pointer-events': 'none',
+          'background-image': `
+            linear-gradient(to right, hsl(var(--grid-lines)) 1px, transparent 1px),
+            linear-gradient(to bottom, hsl(var(--grid-lines)) 1px, transparent 1px)
+          `,
+          'background-size': '32px 32px',
+          'background-position': '16px 16px',
+          'opacity': '0.35',
+          'mask-image': 'linear-gradient(to top, black, transparent)',
+        },
+      })
+    }
+  ],
 }
