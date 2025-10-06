@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 
-export function TestimonialGrid() {
+export default function TestimonialGrid() {
   const testimonials = [
     {
       name: "张老师",

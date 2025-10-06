@@ -8,7 +8,7 @@ interface UploadDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
+export default function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
   const [file, setFile] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

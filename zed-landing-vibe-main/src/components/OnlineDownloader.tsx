@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link as LinkIcon, Play, Download } from "lucide-react";
 
-export function OnlineDownloader() {
+export default function OnlineDownloader() {
   const [url, setUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
