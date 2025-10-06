@@ -164,25 +164,56 @@ export async function streamAgent(
   onDone && onDone();
 }
 
-// ------------------ 鉴权与会员：占位接口 ------------------
-export type User = { id: string; username: string; nickname?: string };
+// ------------------ 阿里云手机验证码登录系统 ------------------
+export type User = { id: string; phone: string; nickname?: string; password?: string; created_at?: number };
 export type Membership = { vip: boolean; level?: string; expireAt?: string };
 
-export async function loginWithPassword(username: string, password: string) {
-  return apiFetch<{ token: string }>(`/api/auth/login`, {
+// 发送短信验证码
+export async function sendSmsCode(phone: string) {
+  return apiFetch<{ message: string; code?: string }>(`/api/auth/send-sms`, {
     method: "POST",
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ phone })
   });
 }
 
-export async function logout() {
-  return apiFetch<{ ok: boolean }>(`/api/auth/logout`, { method: "POST" });
+// 验证短信验证码并登录
+export async function verifySmsCode(phone: string, code: string) {
+  return apiFetch<{ token: string; user: User; need_set_password: boolean }>(`/api/auth/verify-sms`, {
+    method: "POST",
+    body: JSON.stringify({ phone, code })
+  });
 }
 
-export async function getCurrentUser() {
-  return apiFetch<User | null>(`/api/auth/me`);
+// 设置密码
+export async function setPassword(token: string, password: string) {
+  return apiFetch<{ message: string }>(`/api/auth/set-password`, {
+    method: "POST",
+    body: JSON.stringify({ token, password })
+  });
 }
 
-export async function getMembershipInfo() {
-  return apiFetch<Membership>(`/api/membership/me`);
+// 密码登录
+export async function loginWithPassword(phone: string, password: string) {
+  return apiFetch<{ token: string; user: User }>(`/api/auth/login`, {
+    method: "POST",
+    body: JSON.stringify({ phone, password })
+  });
+}
+
+// 退出登录
+export async function logout(token: string) {
+  return apiFetch<{ ok: boolean }>(`/api/auth/logout`, {
+    method: "POST",
+    body: JSON.stringify({ token })
+  });
+}
+
+// 获取当前用户信息
+export async function getCurrentUser(token: string) {
+  return apiFetch<User | null>(`/api/auth/me?token=${encodeURIComponent(token)}`);
+}
+
+// 获取会员信息
+export async function getMembershipInfo(token: string) {
+  return apiFetch<Membership>(`/api/membership/me?token=${encodeURIComponent(token)}`);
 }

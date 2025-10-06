@@ -4,13 +4,16 @@ import BackgroundGrid from "@/components/BackgroundGrid";
 import EdgeOrnaments from "@/components/EdgeOrnaments";
 import TestimonialGrid from "@/components/TestimonialGrid";
 import UploadDialog from "@/components/UploadDialog";
+import LoginGuard from "@/components/LoginGuard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Download, Github, Bolt, Users, Brain, Video, Link as LinkIcon, Upload, Sparkles, FileDown, FileText, Image as ImageIcon, ShieldCheck, Languages } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import OnlineDownloader from "@/components/OnlineDownloader";
 const Index = () => {
   const [openUpload, setOpenUpload] = useState(false);
+  const { user } = useAuth();
   const logo = "/lovable-uploads/1a269a26-9009-4b73-80c2-654445d2810b.png";
   const jsonLd = {
     "@context": "https://schema.org",
@@ -80,6 +83,15 @@ const Index = () => {
                 </a>
               </Button>
             </div>
+
+            {/* 登录提示 */}
+            {!user && (
+              <div className="mt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  使用功能前请先 <a href="/login" className="text-primary underline">登录</a>
+                </p>
+              </div>
+            )}
 
             {/* Online video URL downloader */}
             <div className="container mx-auto max-w-3xl">

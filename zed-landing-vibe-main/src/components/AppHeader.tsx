@@ -47,31 +47,31 @@ export default function AppHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-1">
                 <User2 className="h-4 w-4" />
-                <span className="text-xs font-medium">{user ? (user.nickname || user.username) : t("auth.account")}</span>
+                <span className="text-xs font-medium">{user ? (user.nickname || user.phone) : "账号"}</span>
                 {membership?.vip ? <Crown className="h-4 w-4 text-yellow-500" /> : <ChevronDown className="h-3 w-3 opacity-60" />}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuLabel className="text-xs">
-                {user ? t("auth.welcome") + (user.nickname || user.username) : t("auth.pleaseLogin")}
+                {user ? `欢迎，${user.nickname || user.phone}` : "请先登录"}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {user ? (
                 <>
                   <DropdownMenuItem asChild>
-                    <a href="/account" className="flex items-center gap-2"><User2 className="h-4 w-4" /> {t("auth.profile")}</a>
+                    <a href="/account" className="flex items-center gap-2"><User2 className="h-4 w-4" /> 个人中心</a>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <a href="/vip" className="flex items-center gap-2"><Crown className="h-4 w-4" /> {t("auth.membership")}</a>
+                    <a href="/vip" className="flex items-center gap-2"><Crown className="h-4 w-4" /> 会员中心</a>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => logout()} className="text-red-600">
-                    <LogOut className="h-4 w-4" /> {t("auth.logout")}
+                    <LogOut className="h-4 w-4" /> 退出登录
                   </DropdownMenuItem>
                 </>
               ) : (
                 <DropdownMenuItem asChild>
-                  <a href="/login" className="flex items-center gap-2"><LogIn className="h-4 w-4" /> {t("auth.login")}</a>
+                  <a href="/login" className="flex items-center gap-2"><LogIn className="h-4 w-4" /> 登录</a>
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

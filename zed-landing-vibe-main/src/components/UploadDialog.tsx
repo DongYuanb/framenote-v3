@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/use-toast";
 import { uploadVideo, startProcess } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 interface UploadDialogProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface UploadDialogProps {
 
 export default function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
   const nav = useNavigate();
+  const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [enableMultimodal, setEnableMultimodal] = useState(true);
   const [keepTemp, setKeepTemp] = useState(false);
@@ -22,6 +24,15 @@ export default function UploadDialog({ open, onOpenChange }: UploadDialogProps) 
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    
+    // 检查登录状态
+    if (!user) {
+      toast({ title: "请先登录", description: "使用功能前需要先登录", });
+      onOpenChange(false);
+      nav("/login");
+      return;
+    }
+    
     if (!file) {
       toast({ title: "请选择视频文件", description: "支持 mp4, avi, mov, mkv, webm", });
       return;
