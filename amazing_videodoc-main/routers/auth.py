@@ -302,3 +302,36 @@ async def membership_upgrade(payload: dict):
     return {"ok": True, "message": f"已开通：{plan['name']}", "expire_at": USERS[phone]["vip_expire_at"]}
 
 
+# ------------------ 支付宝支付（占位实现） ------------------
+@router.post("/payment/alipay/create")
+async def alipay_create(payload: dict):
+    token = payload.get("token")
+    plan_id = payload.get("plan_id")
+    if not token or token not in SESSIONS:
+        raise HTTPException(status_code=401, detail="请先登录")
+    plan = next((p for p in MEMBERSHIP_PLANS if p["id"] == plan_id), None)
+    if not plan:
+        raise HTTPException(status_code=404, detail="会员计划不存在")
+    # 占位：返回模拟的支付链接（实际应对接支付宝当面付/电脑网站支付）
+    order_no = str(int(time.time()))
+    ORDERS[order_no] = {"plan_id": plan_id, "amount": plan["price"], "status": "pending"}
+    pay_url = f"/api/payment/alipay/mock-pay?order_no={order_no}&plan_id={plan_id}"
+    return {"order_no": order_no, "pay_url": pay_url}
+
+@router.get("/payment/alipay/mock-pay")
+async def alipay_mock_pay(order_no: str, plan_id: str):
+    # 直接模拟支付成功并开通
+    ORDERS.setdefault(order_no, {"plan_id": plan_id})
+    ORDERS[order_no]["status"] = "paid"
+    # 这只是演示页面文本
+    return {"message": "支付成功（模拟）", "order_no": order_no}
+
+@router.post("/payment/alipay/notify")
+async def alipay_notify(payload: dict):
+    # 占位：接收支付宝异步通知并标记订单已支付
+    order_no = payload.get("order_no")
+    if not order_no or order_no not in ORDERS:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    ORDERS[order_no]["status"] = "paid"
+    return {"ok": True}
+

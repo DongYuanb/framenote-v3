@@ -94,9 +94,11 @@ const Index = () => {
             )}
 
             {/* Online video URL downloader */}
-            <div className="container mx-auto max-w-3xl">
-              <OnlineDownloader />
-            </div>
+            {user && (
+              <div className="container mx-auto max-w-3xl">
+                <OnlineDownloader />
+              </div>
+            )}
           </div>
         </section>
 

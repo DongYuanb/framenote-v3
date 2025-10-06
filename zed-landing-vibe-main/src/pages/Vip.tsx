@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { getMembershipPlans, upgradeMembership } from "@/lib/api";
+import { getMembershipPlans, upgradeMembership, createAlipayOrder } from "@/lib/api";
 
 type Plan = { id:string; name:string; price:number; currency:string; duration_days:number; benefits:string[] };
 
@@ -52,14 +52,20 @@ export default function VipPage() {
               <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
                 {p.benefits.map((b,i)=>(<li key={i}>{b}</li>))}
               </ul>
-              <Button className="mt-4 w-full" disabled={!token || submitting===p.id} onClick={async()=>{
-                if(!token) return;
-                setSubmitting(p.id);
-                try{
-                  await upgradeMembership(token, p.id);
-                  await refresh();
-                }finally{setSubmitting(null)}
-              }}>{submitting===p.id? '开通中...':'立即开通'}</Button>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button className="w-full" variant="outline" disabled={!token || submitting===`pay-${p.id}`} onClick={async()=>{
+                  if(!token) return; setSubmitting(`pay-${p.id}`);
+                  try{
+                    const r=await createAlipayOrder(token, p.id);
+                    window.location.href=r.pay_url;
+                  }finally{setSubmitting(null)}
+                }}>{submitting===`pay-${p.id}`?'跳转中...':'支付宝支付'}</Button>
+                <Button className="w-full" disabled={!token || submitting===p.id} onClick={async()=>{
+                  if(!token) return; setSubmitting(p.id);
+                  try{ await upgradeMembership(token, p.id); await refresh(); }
+                  finally{setSubmitting(null)}
+                }}>{submitting===p.id? '开通中...':'直接开通(演示)'}</Button>
+              </div>
             </CardContent>
           </Card>
         ))}

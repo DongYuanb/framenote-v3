@@ -183,6 +183,24 @@ COHERE_API_KEY=your_cohere_api_key
 - 导航栏右侧“售后群”按钮会自动弹出展示
 - 若不放图片，按钮仍存在但会显示默认占位提示
 
+### 支付与开通（支付宝占位）
+- 前端：会员中心提供“支付宝支付”按钮，调用 `/api/payment/alipay/create` 获取 `pay_url` 并跳转
+- 后端：
+  - `POST /api/payment/alipay/create` 创建订单（占位，返回模拟支付链接）
+  - `GET  /api/payment/alipay/mock-pay` 演示支付成功页
+  - `POST /api/payment/alipay/notify` 演示异步通知（占位）
+- 对接真实支付宝时：需提供 AppId、应用私钥、公钥、回调地址，替换上述占位接口为正式签名/验签流程
+
+### SEO 与收录
+- 页面级 SEO：
+  - index.html 已添加 `title/description/keywords`、OpenGraph、Twitter Card、JSON‑LD（SoftwareApplication）
+  - 运行时在 `src/main.tsx` 设置基础 `title/description/keywords`
+- 建议：
+  - 公网部署 + HTTPS（搜索更偏好 https）
+  - 生成并提交 `sitemap.xml` 与 `robots.txt`
+  - 在百度/必应/Google 站长平台验证站点并提交站点地图
+  - 为 FAQ/价格/教程等页面补充结构化数据（FAQPage、PriceSpecification）
+
 ## 📋 更新记录
 
 ### v3.1.0 (2025-10-06)

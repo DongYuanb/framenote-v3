@@ -229,6 +229,14 @@ export async function upgradeMembership(token:string, planId:string){
   });
 }
 
+// 支付宝下单
+export async function createAlipayOrder(token:string, planId:string){
+  return apiFetch<{order_no:string; pay_url:string}>(`/api/payment/alipay/create`,{
+    method:'POST',
+    body: JSON.stringify({ token, plan_id: planId })
+  });
+}
+
 // 用量查询
 export type Usage = { tier?: string; used_seconds: number; limit_seconds: number; remain_seconds: number };
 export async function getTodayUsage(token: string){
