@@ -37,13 +37,28 @@ FrameNote 是一个基于 AI 的智能视频笔记生成工具，能够自动提
 - **FastAPI** - Python Web 框架
 - **Uvicorn** - ASGI 服务器
 - **Pydantic** - 数据验证
-- **阿里云短信** - 验证码服务
+- **SQLite** - 数据库（可升级为PostgreSQL）
+- **JWT** - 身份认证
+- **psutil** - 系统监控
 
 ### AI 服务
-- **OpenAI GPT** - 文本生成
-- **Cohere** - 文本嵌入
+- **OpenAI GPT** - 文本生成和智能分析
+- **Cohere** - 文本嵌入和分类
+- **scikit-learn** - 机器学习分析
 - **LanceDB** - 向量数据库
 - **FFmpeg** - 视频处理
+
+### 图像处理
+- **Pillow** - 图像处理
+- **FFmpeg** - 视频缩略图生成
+- **OpenCV** - 计算机视觉（可选）
+
+### 安全与监控
+- **JWT** - 令牌认证
+- **HMAC** - 数据签名
+- **限流中间件** - API保护
+- **审计日志** - 操作追踪
+- **系统监控** - 性能分析
 
 ## 📦 安装和运行
 
@@ -51,25 +66,59 @@ FrameNote 是一个基于 AI 的智能视频笔记生成工具，能够自动提
 - Python 3.8+
 - Node.js 16+
 - FFmpeg
+- 8GB+ 内存（推荐）
 
-### 后端启动
+### 快速启动
+
+#### 1. 安装依赖
 ```bash
+# 后端依赖
 cd amazing_videodoc-main
 pip install -r requirements.txt
-python main.py
-```
 
-### 前端启动
-```bash
+# 前端依赖
 cd zed-landing-vibe-main
 npm install
+```
+
+#### 2. 配置环境变量
+创建 `amazing_videodoc-main/.env` 文件：
+```env
+# 必需配置
+OPENAI_API_KEY=你的OpenAI密钥
+COHERE_API_KEY=你的Cohere密钥
+
+# 可选配置
+ALIYUN_ACCESS_KEY_ID=你的阿里云AccessKey
+ALIYUN_ACCESS_KEY_SECRET=你的阿里云SecretKey
+ALIPAY_APP_ID=你的支付宝应用ID
+SUPABASE_URL=你的Supabase项目URL
+SUPABASE_ANON_KEY=你的Supabase匿名密钥
+```
+
+#### 3. 创建存储目录
+```bash
+mkdir -p storage/uploads storage/thumbnails storage/processed
+```
+
+#### 4. 启动服务
+```bash
+# 启动后端
+cd amazing_videodoc-main
+python main.py
+
+# 启动前端（新终端）
+cd zed-landing-vibe-main
 npm run dev
 ```
 
 ### 访问地址
-- 前端：http://localhost:8080
-- 后端 API：http://localhost:8001
-- API 文档：http://localhost:8001/docs
+- **前端界面**：http://localhost:8080
+- **后端API**：http://localhost:8001
+- **API文档**：http://localhost:8001/docs
+- **管理员后台**：http://localhost:8001/admin
+- **健康检查**：http://localhost:8001/api/health
+- **性能监控**：http://localhost:8001/api/metrics
 
 ## 📝 使用说明
 
@@ -77,24 +126,90 @@ npm run dev
 - 使用手机号接收验证码登录
 - 首次登录需要设置密码
 - 支持手机号+密码快速登录
+- 支持会员等级管理
 
-### 2. 视频上传
-- 支持本地视频文件上传
-- 支持在线视频 URL 下载
-- 支持格式：MP4, AVI, MOV, MKV, WebM
+### 2. 视频处理
+- **单文件上传**：支持本地视频文件上传
+- **批量上传**：同时上传多个视频文件
+- **在线下载**：支持在线视频 URL 下载
+- **格式支持**：MP4, AVI, MOV, MKV, WebM
+- **预览功能**：自动生成缩略图和时间轴预览
 
 ### 3. 智能分析
-- 自动语音识别（ASR）
-- 关键帧提取
-- 内容摘要生成
-- 多模态笔记创建
+- **基础分析**：自动语音识别（ASR）、关键帧提取
+- **AI增强**：关键词提取、情感分析、主题分类
+- **内容生成**：智能摘要、多模态笔记创建
+- **学习辅助**：学习难度分析、学习路径推荐
 
 ### 4. 结果导出
-- Markdown 格式笔记
-- PDF 文档导出
-- 图片资源打包
+- **Markdown格式**：结构化笔记导出
+- **PDF文档**：完整报告生成
+- **图片资源**：关键帧图片打包
+- **版本管理**：笔记版本历史记录
+
+### 5. 管理员功能
+- **数据管理**：用户、任务、订单、用量管理
+- **统计分析**：用户增长、收入统计、性能监控
+- **系统监控**：健康状态、错误追踪、优化建议
+- **批量操作**：批量用户管理、数据清理
 
 ## 🔧 配置说明
+
+### 环境变量配置
+在 `amazing_videodoc-main/.env` 文件中配置：
+
+```env
+# 基础配置
+DEPLOYMENT_MODE=local
+FRONTEND_URL=http://localhost:8080
+
+# 必需API密钥
+OPENAI_API_KEY=你的OpenAI密钥
+COHERE_API_KEY=你的Cohere密钥
+
+# 阿里云短信配置（可选）
+ALIYUN_ACCESS_KEY_ID=你的阿里云AccessKey
+ALIYUN_ACCESS_KEY_SECRET=你的阿里云SecretKey
+ALIYUN_SMS_SIGN_NAME=FrameNote
+ALIYUN_SMS_TEMPLATE_CODE=SMS_123456789
+
+# 支付宝支付配置（可选）
+ALIPAY_APP_ID=你的支付宝应用ID
+ALIPAY_PRIVATE_KEY=你的应用私钥
+ALIPAY_PUBLIC_KEY=支付宝公钥
+
+# Supabase配置（推荐）
+SUPABASE_URL=你的Supabase项目URL
+SUPABASE_ANON_KEY=你的Supabase匿名密钥
+
+# 安全配置
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+```
+
+### 数据库配置
+- **默认**：SQLite数据库（自动创建）
+- **推荐**：Supabase PostgreSQL（功能更强大）
+- **生产**：PostgreSQL + 连接池
+
+### 第三方服务集成
+
+#### Supabase集成（推荐）
+1. 访问 [https://supabase.com](https://supabase.com)
+2. 创建新项目
+3. 执行 `supabase_setup.md` 中的SQL脚本
+4. 配置环境变量
+
+#### 阿里云短信服务
+1. 阿里云控制台 → 短信服务
+2. 申请短信签名和模板
+3. 获取AccessKey和SecretKey
+4. 配置环境变量
+
+#### 支付宝支付
+1. 支付宝开放平台创建应用
+2. 配置应用密钥
+3. 设置回调地址
+4. 配置环境变量
 
 ## 💎 会员价位与权益
 
@@ -180,16 +295,54 @@ COHERE_API_KEY=your_cohere_api_key
 
 ### 售后服务群二维码（预留）
 - 将二维码命名为 `support-group-qr.jpg` 放到前端 `zed-landing-vibe-main/public/` 目录
-- 导航栏右侧“售后群”按钮会自动弹出展示
+- 导航栏右侧"售后群"按钮会自动弹出展示
 - 若不放图片，按钮仍存在但会显示默认占位提示
 
 ### 支付与开通（支付宝占位）
-- 前端：会员中心提供“支付宝支付”按钮，调用 `/api/payment/alipay/create` 获取 `pay_url` 并跳转
+- 前端：会员中心提供"支付宝支付"按钮，调用 `/api/payment/alipay/create` 获取 `pay_url` 并跳转
 - 后端：
   - `POST /api/payment/alipay/create` 创建订单（占位，返回模拟支付链接）
   - `GET  /api/payment/alipay/mock-pay` 演示支付成功页
   - `POST /api/payment/alipay/notify` 演示异步通知（占位）
 - 对接真实支付宝时：需提供 AppId、应用私钥、公钥、回调地址，替换上述占位接口为正式签名/验签流程
+
+### 管理员后台
+- **访问地址**：`http://localhost:8001/admin`
+- **登录方式**：使用管理员token（`admin123` 或 `manager456`）
+- **功能模块**：
+  - 仪表板：系统概览、统计数据
+  - 用户管理：用户列表、编辑、会员状态
+  - 任务管理：任务状态、进度监控
+  - 订单管理：支付状态、收入统计
+  - 用量统计：每日趋势、用户排行
+  - 系统监控：健康状态、性能指标
+
+### 批量处理功能
+- **多文件上传**：`POST /api/batch/upload`
+- **批量处理**：`POST /api/batch/process`
+- **进度监控**：`GET /api/batch/progress`
+- **预览生成**：`POST /api/batch/preview`
+
+### AI增强分析
+- **关键词提取**：自动提取视频关键信息
+- **情感分析**：分析内容情感倾向
+- **主题分类**：自动分类视频主题
+- **相似度检测**：检测重复或相似内容
+- **学习难度分析**：评估内容学习难度
+- **学习路径生成**：智能推荐学习路径
+
+### 视频预览功能
+- **缩略图生成**：自动生成视频封面
+- **时间轴预览**：多帧预览展示
+- **网格预览**：缩略图网格展示
+- **视频信息**：时长、分辨率、帧率等
+
+### 安全与监控
+- **API限流**：防止恶意请求，支持IP和用户双重限流
+- **数据加密**：敏感数据加密存储，JWT令牌认证
+- **审计日志**：操作日志记录，安全事件追踪
+- **系统监控**：实时性能监控，健康状态检查
+- **错误追踪**：异常日志收集，性能瓶颈分析
 
 ### SEO 与收录
 - 页面级 SEO：
@@ -203,6 +356,67 @@ COHERE_API_KEY=your_cohere_api_key
 
 ## 📋 更新记录
 
+### v4.0.0 (2025-10-06) - 重大架构升级
+#### 🚀 核心架构升级
+- **数据库持久化**：从内存存储升级为SQLite数据库，支持数据持久化
+- **用量追踪完善**：处理完成后按真实视频时长回填用量，避免多扣/少扣
+- **管理员后台**：完整的Web管理界面，支持用户、任务、订单、用量管理
+- **批量处理**：支持多文件同时上传和处理，提高效率
+- **视频预览**：自动生成缩略图、时间轴预览、网格预览
+- **AI增强分析**：关键词提取、情感分析、主题分类、相似度检测
+- **性能优化**：系统监控、健康检查、性能指标、优化建议
+- **安全加固**：API限流、数据加密、审计日志、访问控制
+
+#### 🔧 技术栈升级
+- **数据库**：SQLite + 数据库模型层
+- **监控**：psutil系统监控 + 性能分析
+- **安全**：JWT认证 + HMAC签名 + 限流中间件
+- **AI服务**：OpenAI GPT + Cohere嵌入 + 智能分析
+- **图像处理**：Pillow + FFmpeg + 缩略图生成
+- **机器学习**：scikit-learn + 文本分析
+
+#### 📊 新增功能
+- **管理员后台**：`http://localhost:8001/admin`
+  - 仪表板：用户统计、任务状态、收入统计、用量分析
+  - 用户管理：查看、编辑、会员状态管理
+  - 任务管理：状态监控、进度跟踪、错误分析
+  - 订单管理：支付状态、收入统计、用户关联
+  - 用量统计：每日趋势、用户排行、活跃度分析
+  - 系统监控：健康状态、性能指标、优化建议
+
+- **批量处理**：`/api/batch/*`
+  - 多文件上传：支持同时上传多个视频文件
+  - 批量处理：并发处理多个任务
+  - 进度监控：实时查看批量处理进度
+  - 预览生成：自动生成时间轴预览图
+
+- **AI智能分析**：
+  - 关键词提取：自动提取视频关键信息
+  - 情感分析：分析内容情感倾向
+  - 主题分类：自动分类视频主题
+  - 相似度检测：检测重复或相似内容
+  - 学习难度分析：评估内容学习难度
+  - 学习路径生成：智能推荐学习路径
+
+- **视频预览功能**：
+  - 缩略图生成：自动生成视频封面
+  - 时间轴预览：多帧预览展示
+  - 网格预览：缩略图网格展示
+  - 视频信息：时长、分辨率、帧率等
+
+#### 🛡️ 安全与监控
+- **API限流**：防止恶意请求，支持IP和用户双重限流
+- **数据加密**：敏感数据加密存储，JWT令牌认证
+- **审计日志**：操作日志记录，安全事件追踪
+- **系统监控**：实时性能监控，健康状态检查
+- **错误追踪**：异常日志收集，性能瓶颈分析
+
+#### 🔄 第三方集成方案
+- **Supabase集成**：PostgreSQL数据库 + 现成管理界面
+- **阿里云短信**：真实短信验证码服务
+- **支付宝支付**：真实支付集成
+- **OpenAI/Cohere**：AI服务集成
+
 ### v3.1.0 (2025-10-06)
 #### 新增
 - 手机验证码登录（阿里云）+ 首次登录设置密码；支持手机号+密码登录
@@ -215,8 +429,8 @@ COHERE_API_KEY=your_cohere_api_key
   - 专业版：每日 180 分钟
   - 旗舰版：每日 480 分钟
   - 新接口 `/api/usage/me` 返回今日已用/总额/剩余；处理接口按档位强制校验
-- 个人中心：新增“今日剩余解析时长”展示
-- 导航栏新增“售后群”弹窗，支持 `public/support-group-qr.jpg`
+- 个人中心：新增"今日剩余解析时长"展示
+- 导航栏新增"售后群"弹窗，支持 `public/support-group-qr.jpg`
 - 前端开发代理指向 8001（需后端在 8001 端口启动）
 
 ### v3.0.0 (2025-01-06)

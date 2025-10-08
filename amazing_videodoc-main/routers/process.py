@@ -28,14 +28,20 @@ async def start_processing(task_id: str, request: ProcessRequest, background_tas
     if metadata["status"] != "pending":
         raise HTTPException(status_code=400, detail=f"任务状态错误: {metadata['status']}")
 
-    # 简易用量与权限控制：免费用户每日 10 分钟
-    try:
-      from .auth import USERS, SESSIONS, USAGE  # type: ignore
-    except Exception:
-      USERS, SESSIONS, USAGE = {}, {}, {}
-
-    if token and token in SESSIONS:
-        phone = SESSIONS[token]["phone"]
+    # 用量与权限控制
+    if not token:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    from models.database_models import SessionModel, UsageModel, TaskModel
+    from routers.auth_new import MEMBERSHIP_PLANS
+    
+    session = SessionModel.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="会话无效")
+    
+    user_id = session['user_id']
+    membership_tier = session.get('membership_tier', 'free')
+    daily_limit = MEMBERSHIP_PLANS.get(membership_tier, {}).get('daily_limit', 10)
         user = USERS.get(phone) or {}
         import datetime, time as _t
         today = datetime.date.today().isoformat()

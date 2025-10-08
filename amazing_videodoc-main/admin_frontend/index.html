@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FrameNote 管理员后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">FrameNote 管理员后台</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-user-shield text-blue-600"></i>
+                        <span class="text-sm text-gray-600">超级管理员</span>
+                    </div>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                        <i class="fas fa-sign-out-alt mr-2"></i>退出
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex">
+        <!-- 侧边栏 -->
+        <div class="w-64 bg-white shadow-lg min-h-screen">
+            <div class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <button onclick="showDashboard()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 flex items-center">
+                            <i class="fas fa-tachometer-alt mr-3 text-blue-600"></i>
+                            仪表板
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="showUsers()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 flex items-center">
+                            <i class="fas fa-users mr-3 text-green-600"></i>
+                            用户管理
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="showTasks()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 flex items-center">
+                            <i class="fas fa-tasks mr-3 text-yellow-600"></i>
+                            任务管理
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="showOrders()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 flex items-center">
+                            <i class="fas fa-shopping-cart mr-3 text-purple-600"></i>
+                            订单管理
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="showUsage()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 flex items-center">
+                            <i class="fas fa-chart-bar mr-3 text-indigo-600"></i>
+                            用量统计
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="showSystem()" class="w-full text-left px-4 py-2 rounded hover:bg-blue-50 flex items-center">
+                            <i class="fas fa-cog mr-3 text-gray-600"></i>
+                            系统监控
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 p-6">
+            <div id="content">
+                <!-- 仪表板内容将在这里动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录模态框 -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h2 class="text-2xl font-bold mb-6 text-center">管理员登录</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">管理员Token</label>
+                    <input type="password" id="adminToken" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="输入管理员token">
+                </div>
+                <button onclick="login()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                    登录
+                </button>
+                <div class="text-sm text-gray-600 text-center">
+                    <p>测试token: <code class="bg-gray-100 px-2 py-1 rounded">admin123</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局配置
+        const API_BASE = 'http://localhost:8001/api';
+        let adminToken = localStorage.getItem('adminToken');
+        let currentView = 'dashboard';
+
+        // 页面加载时检查登录状态
+        window.onload = function() {
+            if (!adminToken) {
+                showLoginModal();
+            } else {
+                hideLoginModal();
+                showDashboard();
+            }
+        };
+
+        // 登录功能
+        function login() {
+            const token = document.getElementById('adminToken').value;
+            if (!token) {
+                alert('请输入管理员token');
+                return;
+            }
+
+            // 测试token有效性
+            fetch(`${API_BASE}/admin/dashboard`, {
+                headers: {
+                    'admin-token': token
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    adminToken = token;
+                    localStorage.setItem('adminToken', token);
+                    hideLoginModal();
+                    showDashboard();
+                } else {
+                    alert('Token无效，请检查后重试');
+                }
+            })
+            .catch(error => {
+                alert('登录失败：' + error.message);
+            });
+        }
+
+        // 退出登录
+        function logout() {
+            adminToken = null;
+            localStorage.removeItem('adminToken');
+            showLoginModal();
+        }
+
+        // 显示/隐藏登录模态框
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+
+        function hideLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        // 通用API请求函数
+        async function apiRequest(endpoint, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'admin-token': adminToken,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                ...defaultOptions,
+                ...options,
+                headers: { ...defaultOptions.headers, ...options.headers }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+        }
+
+        // 仪表板
+        async function showDashboard() {
+            currentView = 'dashboard';
+            try {
+                const data = await apiRequest('/admin/dashboard');
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="space-y-6">
+                        <h2 class="text-3xl font-bold text-gray-800">仪表板</h2>
+                        
+                        <!-- 统计卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                        <i class="fas fa-users text-2xl"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">总用户数</p>
+                                        <p class="text-2xl font-bold text-gray-900">${data.users.total_users}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                        <i class="fas fa-crown text-2xl"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">VIP用户</p>
+                                        <p class="text-2xl font-bold text-gray-900">${data.users.vip_users}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                                        <i class="fas fa-tasks text-2xl"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">总任务数</p>
+                                        <p class="text-2xl font-bold text-gray-900">${data.tasks.total_tasks}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                        <i class="fas fa-dollar-sign text-2xl"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">总收入</p>
+                                        <p class="text-2xl font-bold text-gray-900">¥${data.orders.total_revenue || 0}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 任务状态统计 -->
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold mb-4">任务状态统计</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-green-600">${data.tasks.completed_tasks}</p>
+                                    <p class="text-sm text-gray-600">已完成</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-yellow-600">${data.tasks.processing_tasks}</p>
+                                    <p class="text-sm text-gray-600">处理中</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-red-600">${data.tasks.failed_tasks}</p>
+                                    <p class="text-sm text-gray-600">失败</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-blue-600">${data.usage.total_minutes || 0}</p>
+                                    <p class="text-sm text-gray-600">今日用量(分钟)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        加载仪表板数据失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 用户管理
+        async function showUsers() {
+            currentView = 'users';
+            try {
+                const data = await apiRequest('/admin/users?page=1&size=20');
+                
+                let usersTable = '';
+                if (data.users && data.users.length > 0) {
+                    usersTable = data.users.map(user => `
+                        <tr class="border-b">
+                            <td class="px-6 py-4">${user.phone}</td>
+                            <td class="px-6 py-4">${user.nickname || '-'}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs rounded-full ${user.membership_tier === 'free' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800'}">
+                                    ${user.membership_tier}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">${new Date(user.created_at).toLocaleDateString()}</td>
+                            <td class="px-6 py-4">
+                                <button onclick="editUser(${user.id})" class="text-blue-600 hover:text-blue-800">编辑</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    usersTable = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无用户数据</td></tr>';
+                }
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="space-y-6">
+                        <h2 class="text-3xl font-bold text-gray-800">用户管理</h2>
+                        
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">手机号</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">昵称</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">会员等级</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">注册时间</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${usersTable}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <p class="text-sm text-gray-700">共 ${data.pagination.total} 个用户</p>
+                            <div class="flex space-x-2">
+                                <button onclick="loadUsersPage(${data.pagination.page - 1})" 
+                                        ${data.pagination.page <= 1 ? 'disabled' : ''} 
+                                        class="px-3 py-1 border rounded ${data.pagination.page <= 1 ? 'bg-gray-100 text-gray-400' : 'hover:bg-gray-50'}">上一页</button>
+                                <span class="px-3 py-1">${data.pagination.page} / ${data.pagination.pages}</span>
+                                <button onclick="loadUsersPage(${data.pagination.page + 1})" 
+                                        ${data.pagination.page >= data.pagination.pages ? 'disabled' : ''} 
+                                        class="px-3 py-1 border rounded ${data.pagination.page >= data.pagination.pages ? 'bg-gray-100 text-gray-400' : 'hover:bg-gray-50'}">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        加载用户数据失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 任务管理
+        async function showTasks() {
+            currentView = 'tasks';
+            try {
+                const data = await apiRequest('/admin/tasks?page=1&size=20');
+                
+                let tasksTable = '';
+                if (data.tasks && data.tasks.length > 0) {
+                    tasksTable = data.tasks.map(task => `
+                        <tr class="border-b">
+                            <td class="px-6 py-4">${task.task_id}</td>
+                            <td class="px-6 py-4">${task.filename}</td>
+                            <td class="px-6 py-4">${task.phone}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs rounded-full ${
+                                    task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    task.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                                    task.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }">
+                                    ${task.status}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">${Math.round(task.progress * 100)}%</td>
+                            <td class="px-6 py-4">${new Date(task.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tasksTable = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">暂无任务数据</td></tr>';
+                }
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="space-y-6">
+                        <h2 class="text-3xl font-bold text-gray-800">任务管理</h2>
+                        
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">任务ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件名</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">用户</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">进度</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">创建时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${tasksTable}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        加载任务数据失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 订单管理
+        async function showOrders() {
+            currentView = 'orders';
+            try {
+                const data = await apiRequest('/admin/orders?page=1&size=20');
+                
+                let ordersTable = '';
+                if (data.orders && data.orders.length > 0) {
+                    ordersTable = data.orders.map(order => `
+                        <tr class="border-b">
+                            <td class="px-6 py-4">${order.order_id}</td>
+                            <td class="px-6 py-4">${order.phone}</td>
+                            <td class="px-6 py-4">${order.membership_tier}</td>
+                            <td class="px-6 py-4">¥${order.amount}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs rounded-full ${
+                                    order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                }">
+                                    ${order.status}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">${new Date(order.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    ordersTable = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">暂无订单数据</td></tr>';
+                }
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="space-y-6">
+                        <h2 class="text-3xl font-bold text-gray-800">订单管理</h2>
+                        
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">订单ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">用户</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">会员等级</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">金额</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">创建时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${ordersTable}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        加载订单数据失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 用量统计
+        async function showUsage() {
+            currentView = 'usage';
+            try {
+                const data = await apiRequest('/admin/stats/usage?days=7');
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="space-y-6">
+                        <h2 class="text-3xl font-bold text-gray-800">用量统计</h2>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">每日用量趋势</h3>
+                                <div class="space-y-2">
+                                    ${data.daily_usage.map(day => `
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">${day.date}</span>
+                                            <div class="flex items-center space-x-4">
+                                                <span class="text-sm">${day.total_minutes.toFixed(1)}分钟</span>
+                                                <span class="text-sm text-gray-500">${day.active_users}用户</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">用量排行</h3>
+                                <div class="space-y-2">
+                                    ${data.top_users.slice(0, 10).map((user, index) => `
+                                        <div class="flex justify-between items-center">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-sm font-medium text-gray-600">${index + 1}.</span>
+                                                <span class="text-sm">${user.phone}</span>
+                                                <span class="px-2 py-1 text-xs rounded ${user.membership_tier === 'free' ? 'bg-gray-100' : 'bg-yellow-100'}">
+                                                    ${user.membership_tier}
+                                                </span>
+                                            </div>
+                                            <span class="text-sm font-medium">${user.total_minutes.toFixed(1)}分钟</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        加载用量数据失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 系统监控
+        async function showSystem() {
+            currentView = 'system';
+            try {
+                const healthData = await apiRequest('/health');
+                const metricsData = await apiRequest('/metrics');
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="space-y-6">
+                        <h2 class="text-3xl font-bold text-gray-800">系统监控</h2>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">系统健康状态</h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">整体状态</span>
+                                        <span class="px-2 py-1 text-xs rounded-full ${healthData.overall_status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${healthData.overall_status}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">运行时间</span>
+                                        <span class="text-sm">${Math.round(healthData.uptime_seconds / 3600)}小时</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">总请求数</span>
+                                        <span class="text-sm">${healthData.total_requests}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">错误率</span>
+                                        <span class="text-sm">${healthData.error_rate.toFixed(2)}%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">平均响应时间</span>
+                                        <span class="text-sm">${healthData.avg_response_time.toFixed(2)}秒</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">性能建议</h3>
+                                <div class="space-y-2">
+                                    ${metricsData.recommendations.length > 0 ? 
+                                        metricsData.recommendations.map(rec => `
+                                            <div class="flex items-start space-x-2">
+                                                <i class="fas fa-exclamation-triangle text-yellow-500 mt-1"></i>
+                                                <span class="text-sm text-gray-700">${rec}</span>
+                                            </div>
+                                        `).join('') : 
+                                        '<div class="text-sm text-green-600">系统运行良好，无需优化</div>'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        加载系统数据失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 编辑用户
+        function editUser(userId) {
+            alert('编辑用户功能待实现，用户ID: ' + userId);
+        }
+
+        // 加载用户页面
+        function loadUsersPage(page) {
+            // 这里可以实现分页加载
+            console.log('加载第', page, '页用户数据');
+        }
+    </script>
+</body>
+</html>

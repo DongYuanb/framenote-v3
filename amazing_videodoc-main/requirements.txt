@@ -24,5 +24,11 @@ yt-dlp
 pydantic
 python-dotenv
 openai
+# 新增依赖
+psutil
+scikit-learn
+Pillow
+PyJWT
+cryptography
 
 faiss-cpu

@@ -10,10 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from settings import get_settings
+from middleware.monitoring import monitoring_middleware, start_system_monitoring, get_health_check, get_performance_metrics
+from middleware.rate_limit import check_rate_limit
+from middleware.security import validate_request_size, audit_log
 
 # 导入路由
-from routers import upload, process, export, download, agent
-from routers.auth import router as auth_router
+from routers import upload, export, download, agent
+from routers.process_new import router as process_router
+from routers.auth_new import router as auth_router
+from routers.admin import router as admin_router
+from routers.batch import router as batch_router
 
 load_dotenv()
 settings = get_settings()
@@ -46,21 +52,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 添加监控中间件
+app.middleware("http")(monitoring_middleware)
+
+# 启动系统监控
+start_system_monitoring()
+
 # 注册 API 路由（必须在静态文件挂载之前）
 app.include_router(upload)
-app.include_router(process)
+app.include_router(process_router)
 app.include_router(export)
 app.include_router(download)
 app.include_router(agent)
 app.include_router(auth_router)
+app.include_router(admin_router)
+app.include_router(batch_router)
 
 # 基础配置查询（供前端读取运行时配置）
 @app.get("/api/config")
 async def api_config():
     return {"mode": settings.DEPLOYMENT_MODE, "api_base_url": settings.public_api_base_url}
 
+# 健康检查端点
+@app.get("/api/health")
+async def health_check():
+    return get_health_check()
+
+# 性能指标端点
+@app.get("/api/metrics")
+async def performance_metrics():
+    return get_performance_metrics()
+
 # 挂载静态文件目录
 app.mount("/storage", StaticFiles(directory="storage"), name="storage")
+
+# 挂载管理员前端
+app.mount("/admin", StaticFiles(directory="admin_frontend", html=True), name="admin")
 
 # 挂载前端静态文件（SPA，必须最后挂载）
 frontend_dist = Path("zed-landing-vibe/dist")
