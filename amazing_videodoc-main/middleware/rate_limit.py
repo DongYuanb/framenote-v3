@@ -1,87 +1,107 @@
 """
-API限流中间件
+限流中间件
 """
 import time
-from typing import Dict, Tuple
-from fastapi import Request, HTTPException
-from collections import defaultdict, deque
 import logging
+from typing import Dict, Optional
+from collections import defaultdict, deque
+from fastapi import Request, HTTPException
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 class RateLimiter:
     def __init__(self):
-        # 存储每个IP的请求记录 {ip: deque(timestamps)}
-        self.requests: Dict[str, deque] = defaultdict(lambda: deque())
-        # 存储每个用户的请求记录 {user_id: deque(timestamps)}
-        self.user_requests: Dict[str, deque] = defaultdict(lambda: deque())
-    
-    def is_allowed(self, identifier: str, limit: int, window: int, is_user: bool = False) -> bool:
+        # 存储每个IP的请求记录
+        self.requests = defaultdict(lambda: deque())
+        # 存储每个用户的请求记录
+        self.user_requests = defaultdict(lambda: deque())
+        
+    def is_allowed(self, 
+                   identifier: str, 
+                   limit: int = 100, 
+                   window: int = 3600, 
+                   is_user: bool = False) -> bool:
         """检查是否允许请求"""
         now = time.time()
-        requests = self.user_requests[identifier] if is_user else self.requests[identifier]
+        cutoff = now - window
         
-        # 清理过期请求
-        while requests and requests[0] <= now - window:
-            requests.popleft()
+        # 选择存储
+        storage = self.user_requests if is_user else self.requests
+        
+        # 清理过期记录
+        while storage[identifier] and storage[identifier][0] < cutoff:
+            storage[identifier].popleft()
         
         # 检查是否超过限制
-        if len(requests) >= limit:
+        if len(storage[identifier]) >= limit:
             return False
         
         # 记录当前请求
-        requests.append(now)
+        storage[identifier].append(now)
         return True
     
-    def get_remaining(self, identifier: str, limit: int, window: int, is_user: bool = False) -> int:
+    def get_remaining(self, 
+                     identifier: str, 
+                     limit: int = 100, 
+                     window: int = 3600, 
+                     is_user: bool = False) -> int:
         """获取剩余请求次数"""
         now = time.time()
-        requests = self.user_requests[identifier] if is_user else self.requests[identifier]
+        cutoff = now - window
         
-        # 清理过期请求
-        while requests and requests[0] <= now - window:
-            requests.popleft()
+        storage = self.user_requests if is_user else self.requests
         
-        return max(0, limit - len(requests))
+        # 清理过期记录
+        while storage[identifier] and storage[identifier][0] < cutoff:
+            storage[identifier].popleft()
+        
+        return max(0, limit - len(storage[identifier]))
 
-# 全局限流器实例
+# 全局限流器
 rate_limiter = RateLimiter()
 
-# 限流配置
-RATE_LIMITS = {
-    "auth": {"limit": 5, "window": 60},  # 认证接口：每分钟5次
-    "upload": {"limit": 3, "window": 60},  # 上传接口：每分钟3次
-    "process": {"limit": 10, "window": 60},  # 处理接口：每分钟10次
-    "general": {"limit": 100, "window": 60},  # 一般接口：每分钟100次
-}
-
-def check_rate_limit(request: Request, endpoint_type: str = "general", user_id: str = None) -> bool:
+def check_rate_limit(request: Request, 
+                    limit: int = 100, 
+                    window: int = 3600,
+                    per_user: bool = False) -> bool:
     """检查限流"""
-    client_ip = request.client.host
+    # 获取标识符
+    if per_user:
+        # 从token中获取用户ID
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            # 这里应该解析JWT token获取用户ID
+            # 简化版本，实际应该验证token
+            identifier = f"user_{hash(token) % 10000}"
+        else:
+            identifier = "anonymous"
+    else:
+        # 使用IP地址
+        identifier = request.client.host
     
-    # 获取限流配置
-    config = RATE_LIMITS.get(endpoint_type, RATE_LIMITS["general"])
-    limit = config["limit"]
-    window = config["window"]
-    
-    # 检查IP限流
-    if not rate_limiter.is_allowed(client_ip, limit, window):
-        logger.warning(f"IP限流触发: {client_ip}, 类型: {endpoint_type}")
+    # 检查限流
+    if not rate_limiter.is_allowed(identifier, limit, window, per_user):
+        remaining = rate_limiter.get_remaining(identifier, limit, window, per_user)
         raise HTTPException(
             status_code=429,
-            detail=f"请求过于频繁，请{window}秒后再试",
-            headers={"Retry-After": str(window)}
+            detail=f"请求过于频繁，请稍后再试。剩余请求次数: {remaining}"
         )
     
-    # 检查用户限流（如果提供了用户ID）
-    if user_id and endpoint_type in ["upload", "process"]:
-        user_limit = limit * 2  # 用户限流更宽松
-        if not rate_limiter.is_allowed(user_id, user_limit, window, is_user=True):
-            logger.warning(f"用户限流触发: {user_id}, 类型: {endpoint_type}")
-            raise HTTPException(
-                status_code=429,
-                detail=f"用户请求过于频繁，请{window}秒后再试",
-                headers={"Retry-After": str(window)}
-            )
-    
     return True
+
+def get_rate_limit_info(identifier: str, 
+                       limit: int = 100, 
+                       window: int = 3600,
+                       is_user: bool = False) -> Dict:
+    """获取限流信息"""
+    remaining = rate_limiter.get_remaining(identifier, limit, window, is_user)
+    return {
+        "limit": limit,
+        "remaining": remaining,
+        "reset_time": int(time.time() + window),
+        "window": window
+    }
+
+

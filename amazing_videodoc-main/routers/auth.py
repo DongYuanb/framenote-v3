@@ -1,35 +1,36 @@
-"""阿里云手机验证码登录系统"""
-from fastapi import APIRouter, HTTPException
+"""安全认证系统 - 支持手机验证码和密码登录"""
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+from database import get_db, User, Session as UserSession, VerificationCode, create_user, get_user_by_phone, create_session, get_user_by_token, cleanup_expired_sessions, cleanup_expired_codes
 import random
 import time
-from typing import Dict, Optional
-from pathlib import Path
-import json
+from typing import Optional
+from datetime import datetime, timedelta
+import os
 
 router = APIRouter(prefix="/api", tags=["auth"])
-
-# 内存存储（生产环境应使用数据库）
-USERS: Dict[str, dict] = {}  # 用户数据 {phone: {id, phone, nickname, password, created_at}}
-VERIFICATION_CODES: Dict[str, dict] = {}  # 验证码 {phone: {code, expire_time}}
-SESSIONS: Dict[str, dict] = {}  # 会话 {token: {user_id, phone, login_time}}
-USAGE: Dict[str, dict] = {}  # 用量 {phone: {date: 'YYYY-MM-DD', used_seconds: int}}
+security = HTTPBearer(auto_error=False)
 
 # 阿里云短信配置（需要配置真实参数）
 ALIYUN_SMS_CONFIG = {
-    "access_key_id": "your_access_key_id",
-    "access_key_secret": "your_access_key_secret",
-    "sign_name": "FrameNote",
-    "template_code": "SMS_123456789"
+    "access_key_id": os.getenv("ALIYUN_ACCESS_KEY_ID", "your_access_key_id"),
+    "access_key_secret": os.getenv("ALIYUN_ACCESS_KEY_SECRET", "your_access_key_secret"),
+    "sign_name": os.getenv("ALIYUN_SIGN_NAME", "FrameNote"),
+    "template_code": os.getenv("ALIYUN_TEMPLATE_CODE", "SMS_123456789")
 }
 
 def generate_verification_code() -> str:
     """生成6位数字验证码"""
     return str(random.randint(100000, 999999))
 
-def generate_token() -> str:
-    """生成用户token"""
-    import uuid
-    return str(uuid.uuid4())
+def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security), db: Session = Depends(get_db)) -> Optional[User]:
+    """获取当前用户"""
+    if not credentials:
+        return None
+    
+    token = credentials.credentials
+    return get_user_by_token(db, token)
 
 @router.post("/auth/send-sms")
 async def send_sms(payload: dict):
@@ -52,9 +53,13 @@ async def send_sms(payload: dict):
         "send_time": time.time()
     }
     
-    # TODO: 这里应该调用阿里云短信API发送验证码
-    # 目前返回验证码用于测试
-    print(f"发送验证码到 {phone}: {code}")
+    # 测试模式：固定验证码
+    if phone == "13800138000":
+        code = "123456"
+        VERIFICATION_CODES[phone]["code"] = code
+        print(f"测试手机号 {phone} 验证码: {code}")
+    else:
+        print(f"发送验证码到 {phone}: {code}")
     
     return {"message": "验证码已发送", "code": code}  # 测试时返回验证码
 

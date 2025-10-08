@@ -1,127 +1,119 @@
 #!/usr/bin/env python3
 """
-视频处理工作流程编排器 - FastAPI 服务
+FrameNote 主应用 - 生产版（安全加固版）
 """
-import logging
+import os
+import sys
 from pathlib import Path
-from datetime import datetime
+
+# 添加项目根目录到Python路径
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from dotenv import load_dotenv
-from settings import get_settings
-from middleware.monitoring import monitoring_middleware, start_system_monitoring, get_health_check, get_performance_metrics
-from middleware.rate_limit import check_rate_limit
-from middleware.security import validate_request_size, audit_log
+from routers import auth_secure as auth, process, payment, seo
+from middleware import security_headers, request_logger, strict_limiter, normal_limiter, sms_limiter
+from database import init_db
+from cache import task_manager
+import uvicorn
 
-# 导入路由
-from routers import upload, export, download, agent
-from routers.process_new import router as process_router
-from routers.auth_new import router as auth_router
-from routers.admin import router as admin_router
-from routers.batch import router as batch_router
-
-load_dotenv()
-settings = get_settings()
-
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('video_processing.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
-
-# 创建 FastAPI 应用
+# 创建FastAPI应用
 app = FastAPI(
-    title="视频处理 API",
-    description="视频转录、摘要和图文笔记生成服务",
-    version="1.0.0"
+    title="FrameNote API",
+    description="AI视频笔记生成工具 - 安全加固版",
+    version="2.0.0"
 )
 
-# 配置 CORS (production respects FRONTEND_URL if provided)
-allow_origins = ["*"] if settings.DEPLOYMENT_MODE == "local" or not settings.FRONTEND_URL else [settings.FRONTEND_URL]
+# 安全CORS配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173", 
+        "https://framenote.ai",
+        "https://www.framenote.ai"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
-# 添加监控中间件
-app.middleware("http")(monitoring_middleware)
+# 添加安全中间件
+app.middleware("http")(security_headers)
+app.middleware("http")(request_logger)
 
-# 启动系统监控
-start_system_monitoring()
+# 基础路由
+@app.get("/")
+async def root():
+    return {"message": "FrameNote API 运行中", "status": "ok"}
 
-# 注册 API 路由（必须在静态文件挂载之前）
-app.include_router(upload)
-app.include_router(process_router)
-app.include_router(export)
-app.include_router(download)
-app.include_router(agent)
-app.include_router(auth_router)
-app.include_router(admin_router)
-app.include_router(batch_router)
-
-# 基础配置查询（供前端读取运行时配置）
-@app.get("/api/config")
-async def api_config():
-    return {"mode": settings.DEPLOYMENT_MODE, "api_base_url": settings.public_api_base_url}
-
-# 健康检查端点
 @app.get("/api/health")
 async def health_check():
-    return get_health_check()
+    return {"status": "healthy", "message": "服务正常运行"}
 
-# 性能指标端点
-@app.get("/api/metrics")
-async def performance_metrics():
-    return get_performance_metrics()
+@app.get("/api/config")
+async def api_config():
+    return {"mode": "production", "api_base_url": "http://localhost:8002"}
 
-# 挂载静态文件目录
-app.mount("/storage", StaticFiles(directory="storage"), name="storage")
+# 挂载静态文件
+storage_dir = project_root / "storage"
+if storage_dir.exists():
+    app.mount("/storage", StaticFiles(directory=str(storage_dir)), name="storage")
 
 # 挂载管理员前端
-app.mount("/admin", StaticFiles(directory="admin_frontend", html=True), name="admin")
+admin_dir = project_root / "admin_frontend"
+if admin_dir.exists():
+    app.mount("/admin", StaticFiles(directory=str(admin_dir), html=True), name="admin")
 
-# 挂载前端静态文件（SPA，必须最后挂载）
-frontend_dist = Path("zed-landing-vibe/dist")
+# 挂载前端静态文件
+frontend_dist = Path("zed-landing-vibe-main/dist")
 if frontend_dist.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 
+# 包含路由
+app.include_router(auth.router)
+app.include_router(process.router)
+app.include_router(payment.router)
+app.include_router(seo.router)
 
-@app.get("/")
-async def root():
-    return {"message": "视频处理 API 服务", "docs": "/docs"}
+# 启动事件
+@app.on_event("startup")
+async def startup_event():
+    """应用启动事件"""
+    print("初始化数据库...")
+    init_db()
+    
+    print("启动异步任务管理器...")
+    await task_manager.start_workers()
+    
+    print("FrameNote 安全加固版启动完成！")
+    print("🔒 安全特性: JWT认证、密码加密、API限流、CORS限制")
+    print("💾 数据持久化: PostgreSQL数据库")
+    print("💳 支付集成: 支付宝支付")
+    print("🚀 性能优化: Redis缓存、异步处理")
+    print("🔍 SEO优化: 结构化数据、内容页面")
 
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
-
+@app.on_event("shutdown")
+async def shutdown_event():
+    """应用关闭事件"""
+    print("停止异步任务管理器...")
+    await task_manager.stop_workers()
+    print("FrameNote 服务已停止")
 
 if __name__ == "__main__":
-    import uvicorn
-
-    # 确保存储目录存在
-    storage_dir = Path("storage")
-    storage_dir.mkdir(exist_ok=True)
-
-    logger.info("🚀 启动视频处理 API 服务...")
-    logger.info(f"📁 存储目录: {storage_dir.absolute()}")
-    logger.info("🌐 API 文档: http://localhost:8000/docs")
-    logger.info("🔍 健康检查: http://localhost:8000/api/health")
-    logger.info("📤 上传接口: http://localhost:8000/api/upload")
-
-    uvicorn.run(
-        "main:app",
-        host=settings.SERVER_HOST,
-        port=settings.SERVER_PORT,
-        reload=True,
-        log_level="info"
-    )
+    print("启动FrameNote安全加固版服务...")
+    print("服务地址: http://localhost:8002")
+    print("健康检查: http://localhost:8002/api/health")
+    print("管理员后台: http://localhost:8002/admin")
+    print("SEO页面: http://localhost:8002/api/seo/features")
+    print("按 Ctrl+C 停止服务")
+    
+    try:
+        uvicorn.run(app, host="0.0.0.0", port=8002, log_level="info")
+    except KeyboardInterrupt:
+        print("\n服务已停止")
+    except Exception as e:
+        print(f"启动失败: {e}")
+        sys.exit(1)
